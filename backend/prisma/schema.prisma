@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id @default(uuid())
+  email      String      @unique
+  password   String
+  firstName  String
+  lastName   String
+  phone      String?
+  userType   UserType
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  engineer   Engineer?
+  bookings   Booking[]   @relation("ClientBookings")
+  files      File[]
+}
+
+enum UserType {
+  ADMIN
+  MANAGER
+  ENGINEER
+  CLIENT
+}
+
+model Studio {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  hourlyRate  Float
+  features    String[]
+  imageUrl    String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  bookings    Booking[]
+}
+
+model Equipment {
+  id                String              @id @default(uuid())
+  name              String
+  description       String?
+  category          String
+  hourlyRate        Float
+  quantityAvailable Int
+  imageUrl          String?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  bookingEquipment  BookingEquipment[]
+}
+
+model Engineer {
+  id          String     @id @default(uuid())
+  user        User       @relation(fields: [userId], references: [id])
+  userId      String     @unique
+  specialties String[]
+  hourlyRate  Float
+  bio         String?
+  imageUrl    String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  bookings    Booking[]
+}
+
+model SessionType {
+  id                     String     @id @default(uuid())
+  name                   String
+  description            String?
+  defaultDurationMinutes Int
+  priceMultiplier        Float      @default(1.0)
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+  bookings               Booking[]
+}
+
+model Booking {
+  id               String              @id @default(uuid())
+  client           User                @relation("ClientBookings", fields: [clientId], references: [id])
+  clientId         String
+  studio           Studio              @relation(fields: [studioId], references: [id])
+  studioId         String
+  engineer         Engineer?           @relation(fields: [engineerId], references: [id])
+  engineerId       String?
+  sessionType      SessionType         @relation(fields: [sessionTypeId], references: [id])
+  sessionTypeId    String
+  startTime        DateTime
+  endTime          DateTime
+  status           BookingStatus
+  notes            String?
+  totalPrice       Float
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  bookingEquipment BookingEquipment[]
+  payments         Payment[]
+  files            File[]
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELED
+}
+
+model BookingEquipment {
+  id          String    @id @default(uuid())
+  booking     Booking   @relation(fields: [bookingId], references: [id])
+  bookingId   String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  equipmentId String
+  quantity    Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+  bookingId     String
+  amount        Float
+  paymentMethod String
+  transactionId String?
+  status        PaymentStatus
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model File {
+  id         String   @id @default(uuid())
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  bookingId  String
+  name       String
+  fileType   String
+  s3Url      String
+  uploadedBy User     @relation(fields: [userId], references: [id])
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
